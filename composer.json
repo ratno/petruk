@@ -1,0 +1,14 @@
+{
+    "name": "ratno/tools",
+    "authors": [
+        {
+            "name": "ratno putro sulistiyono",
+            "email": "ratno@knoqdown.com"
+        }
+    ],
+    "bin": ["bin/petruk"],
+    "config": {
+        "bin-dir": "./"
+    },
+    "require": {}
+}
