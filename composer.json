@@ -12,8 +12,5 @@
         ]
     },
     "bin": ["bin/petruk"],
-    "config": {
-        "bin-dir": "./"
-    },
     "require": {}
 }
