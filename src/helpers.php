@@ -1,7 +1,87 @@
 <?php
+
+function composer_helper($argv)
+{
+    $paket = $argv[1];
+    if(array_key_exists(2,$argv)) {
+        $version = $argv[2];
+    } else {
+        $version = "master";
+    }
+
+    $devonly = $argv[3];
+
+    $run_composer_require = false;
+    $git_remote_server = "";
+    $composer_filepath = $basepath."/composer.json";
+    if(file_exists($composer_filepath)) {
+        if(file_exists($paket)) {
+            $composer_vendor_path = $paket."/composer.json";
+            if(file_exists($composer_vendor_path)) {
+                $paket_name = composer_create_repositories($composer_vendor_path,$composer_filepath,false);
+                $run_composer_require = true;
+            } else {
+                die("error vendor bukan paket composer\n\n");
+            }
+        } else {
+            if(strpos($paket,":")) {
+                $paket_array = explode(":",$paket);
+                $git_remote_server = $paket_array[0];
+                $paket_name = $paket_array[1];
+                composer_create_repositories($paket_name,$composer_filepath,$git_remote_server);
+            } else {
+                die("error repository server not found\n\n");
+            }
+        }
+    } else {
+        die("file composer.json not found");
+    }
+
+    if($git_remote_server) {
+        $command = "git ls-remote git@{$git_remote_server}:{$paket_name}.git";
+        $hasil = run_proc($command);
+        
+        if(array_key_exists("output",$hasil) && preg_match("/(HEAD)/",$hasil['output'][0])) {
+            $run_composer_require = true;
+        } else {
+            $user_home = $_SERVER['HOME'];
+            $id_rsa_path = $user_home."/.ssh/id_rsa.pub";
+            if(!file_exists($id_rsa_path)) {
+                run_proc("ssh-keygen -t rsa -b 4096 -f {$user_home}/.ssh/id_rsa -q -N ''");
+            }
+            if($git_remote_server){
+                run_proc("ssh-keyscan -H $git_remote_server >> {$user_home}/.ssh/known_hosts");
+            }
+
+            echo "\n\nanda perlu menyimpan ssh-key berikut di server $git_remote_server:\n\n";
+            echo file_get_contents("{$user_home}/.ssh/id_rsa.pub")."\n\n";
+        }
+    }
+
+    if($run_composer_require) {
+        if($devonly == "dev") {
+            $command = "composer require --dev {$paket_name}:{$version}";
+        } else {
+            $command = "composer require {$paket_name}:{$version}";
+        }
+        passthru($command);
+    }
+}
+
+function create_resource($argv)
+{
+    $nama_paket = $argv[2];
+    // bikin folder packages
+    // ignore folder tersebut
+    // git init package
+    // composer init package
+    // git push origin
+    // petruk paket --dev
+
+}
+
 function composer_create_repositories($paket,$composer_filepath,$vcs="")
 {
-
     $command = "";
     $return = $paket;
 
