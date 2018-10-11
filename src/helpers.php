@@ -1,6 +1,6 @@
 <?php
 
-function composer_helper($argv)
+function composer_helper($argv,$basepath)
 {
     $paket = $argv[1];
     if(array_key_exists(2,$argv)) {
@@ -68,7 +68,7 @@ function composer_helper($argv)
     }
 }
 
-function create_resource($argv)
+function create_resource($argv,$basepath)
 {
     $nama_paket = $argv[2];
     // bikin folder packages
