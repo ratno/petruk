@@ -38,7 +38,7 @@ if(file_exists($composer_filepath)) {
 if($git_remote_server) {
     $command = "git ls-remote git@{$git_remote_server}:{$paket_name}.git";
     $hasil = run_proc($command);
-    print_r($hasil);
+    
     if(array_key_exists("output",$hasil) && preg_match("/(HEAD)/",$hasil['output'][0])) {
         passthru("composer require {$paket_name}:{$version}");
     } else {
