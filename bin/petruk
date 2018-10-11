@@ -17,8 +17,7 @@ if(file_exists($composer_filepath)) {
         if(file_exists($composer_vendor_path)) {
             $composer_vendor = json_decode(file_get_contents($composer_vendor_path),true);
             $paket_name = $composer_vendor['name'];
-            $paket_flat = str_replace("/","_",$paket);
-            composer_create_repositories($paket,$composer_filepath,false);
+            composer_create_repositories($paket_name,$composer_filepath,false);
         } else {
             die("error vendor bukan paket composer\n\n");
         }
@@ -36,16 +35,23 @@ if(file_exists($composer_filepath)) {
     die("file composer.json not found");
 }
 
-$user_home = $_SERVER['HOME'];
-$id_rsa_path = $user_home."/.ssh/id_rsa.pub";
-if(!file_exists($id_rsa_path)) {
-    exec("ssh-keygen -t rsa -b 4096 -f {$user_home}/.ssh/id_rsa -q -N ''");
-}
-if($git_remote_server){
-    exec("ssh-keyscan -H $git_remote_server >> {$user_home}/.ssh/known_hosts");
-}
+if($git_remote_server) {
+    $command = "git ls-remote git@{$git_remote_server}:{$paket_name}.git";
+    $hasil = run_proc($command);
+    print_r($hasil);
+    if(array_key_exists("output",$hasil) && preg_match("/(HEAD)/",$hasil['output'][0])) {
+        passthru("composer require {$paket_name}:{$version}");
+    } else {
+        $user_home = $_SERVER['HOME'];
+        $id_rsa_path = $user_home."/.ssh/id_rsa.pub";
+        if(!file_exists($id_rsa_path)) {
+            run_proc("ssh-keygen -t rsa -b 4096 -f {$user_home}/.ssh/id_rsa -q -N ''");
+        }
+        if($git_remote_server){
+            run_proc("ssh-keyscan -H $git_remote_server >> {$user_home}/.ssh/known_hosts");
+        }
 
-echo "anda perlu menyimpan ssh-key berikut di server $git_remote_server:\n";
-echo file_get_contents("{$user_home}/.ssh/id_rsa.pub")."\n\n";
-
-passthru("composer require {$paket_name}:{$version}");
+        echo "\n\nanda perlu menyimpan ssh-key berikut di server $git_remote_server:\n\n";
+        echo file_get_contents("{$user_home}/.ssh/id_rsa.pub")."\n\n";
+    }
+}
