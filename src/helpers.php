@@ -93,19 +93,21 @@ function composer_create_repositories($paket,$composer_filepath,$vcs="")
     } else {
         // $paket yg diinput disini adalah path menuju composer vendor
         $composer_vendor = json_decode(file_get_contents($paket),true);
-        $paket_name = $composer_vendor['name'];
-        $paket_flat = get_paket_flat($paket_name);
-        $paket_path = str_replace("composer.json","",$paket);
-        if(check_create_repositories($paket_name,$composer_filepath)) {
-            $command = "composer config repositories.{$paket_flat} path $paket_path";
+        if(is_array($composer_vendor) && array_key_exists("name",$composer_vendor)) {
+            $paket_name = $composer_vendor['name'];
             $return = $paket_name;
+            if(check_create_repositories($paket_name,$composer_filepath)) {
+                $paket_flat = get_paket_flat($paket_name);
+                $paket_path = str_replace("composer.json","",$paket);
+                $command = "composer config repositories.{$paket_flat} path $paket_path";
+            }
         }
     }
     
     if($command) {
         passthru($command);
     }
-
+    
     return $return;
 }
 
