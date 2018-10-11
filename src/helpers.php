@@ -6,7 +6,7 @@ function composer_helper($argv,$basepath)
     if(array_key_exists(2,$argv)) {
         $version = $argv[2];
     } else {
-        $version = "master";
+        $version = "dev-master";
     }
 
     $devonly = $argv[3];
