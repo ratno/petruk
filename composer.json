@@ -6,6 +6,11 @@
             "email": "ratno@knoqdown.com"
         }
     ],
+    "autoload": {
+        "files": [
+            "src/helpers.php"
+        ]
+    },
     "bin": ["bin/petruk"],
     "config": {
         "bin-dir": "./"
