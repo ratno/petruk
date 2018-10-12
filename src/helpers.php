@@ -8,8 +8,11 @@ function composer_helper($argv,$basepath)
     } else {
         $version = "dev-master";
     }
-
-    $devonly = $argv[3];
+    if(array_key_exists(3,$argv)) {
+        $devonly = $argv[3];
+    } else {
+        $devonly = "";
+    }
 
     $run_composer_require = false;
     $git_remote_server = "";
