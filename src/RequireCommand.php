@@ -18,7 +18,8 @@ class RequireCommand extends Command
             ->setDescription('Composer require khusus untuk private repo')
             ->addArgument('nama_paket_folder', InputArgument::REQUIRED, 'Nama paket (git.server-repo.com:nama/paket) atau nama folder')
             ->addArgument('versi', InputArgument::OPTIONAL, 'Versi paket (jika tidak diisi maka akan diambilkan ke dev-master)')
-            ->addOption('dev', null, InputOption::VALUE_NONE, 'Forces install even if the directory already exists');
+            ->addOption('dev', null, InputOption::VALUE_NONE, 'Menginstall paket untuk require-dev')
+            ->addOption('global', null, InputOption::VALUE_NONE, 'Menginstall paket dengan composer global');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -26,6 +27,13 @@ class RequireCommand extends Command
         $nama_paket_folder = $input->getArgument('nama_paket_folder');
         $versi = $input->getArgument("versi") ?: "dev-master";
         $dev = $input->getOption("dev");
+        $global = $input->getOption("global");
+
+        if($global) {
+            $composer = "composer global";
+        } else {
+            $composer = "composer";
+        }
 
         $this->createComposerJsonFileIfNotExists();
 
@@ -49,9 +57,9 @@ class RequireCommand extends Command
         $paket_flat = str_replace("/","_",$nama_paket);
 
         if($type == "path") {
-            $command_config = "composer config repositories.{$paket_flat} path $folder";
+            $command_config = "$composer config repositories.{$paket_flat} path $folder";
         } elseif ($type == "vcs") {
-            $command_config = "composer config repositories.{$paket_flat} vcs git@{$remote_uri}:{$nama_paket}.git";
+            $command_config = "$composer config repositories.{$paket_flat} vcs git@{$remote_uri}:{$nama_paket}.git";
         }
 
         if($remote_uri) {
@@ -80,7 +88,7 @@ class RequireCommand extends Command
         }
 
         // sampai sini berarti telah sukses melewati semua pre-requisite-nya
-        $command_require = "composer require {$nama_paket}:{$versi}";
+        $command_require = "$composer require {$nama_paket}:{$versi}";
         if($dev) {
             $command_require .= " --dev";
         }
