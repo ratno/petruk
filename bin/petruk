@@ -1,9 +1,0 @@
-<?php
-$basepath = getcwd();
-include $basepath."/vendor/autoload.php";
-
-if($argv[1] == "resource") {
-    create_resource($argv,$basepath);
-} else {
-    composer_helper($argv,$basepath);
-}
