@@ -70,8 +70,11 @@ class RequireCommand extends Command
                     run_proc("ssh-keyscan -H $remote_uri >> {$user_home}/.ssh/known_hosts");
                 }
 
-                $output->writeln("<error>anda perlu menyimpan ssh-key berikut di server $remote_uri:</error>");
+                $output->writeln("<error>Tidak dapat mengakses server $remote_uri, pastikan alamat server benar.</error>");
+                $output->writeln("<error>Pastikan anda telah menyimpan ssh-key berikut di server $remote_uri:</error>");
                 $output->writeln("<fg=black;bg=green>".trim(file_get_contents("{$user_home}/.ssh/id_rsa.pub"))."</>");
+                $output->writeln("");
+                $output->writeln("<info>Setelah menyimpan ssh-key silahkan ulangi perintah anda tadi.</info>");
                 return 0;
             }
         }
