@@ -16,7 +16,7 @@ class RequireCommand extends Command
         $this
             ->setName('require')
             ->setDescription('Composer require khusus untuk private repo')
-            ->addArgument('nama_paket_folder', InputArgument::REQUIRED, 'Nama paket (git.server-repo.com:nama/paket) atau nama folder')
+            ->addArgument('nama_paket_folder', InputArgument::REQUIRED, 'Nama paket (git.server-repo.com:nama/paket atau https://git.server-repo.com/nama/paket) atau nama folder')
             ->addArgument('versi', InputArgument::OPTIONAL, 'Versi paket (jika tidak diisi maka akan diambilkan ke dev-master)')
             ->addOption('dev', null, InputOption::VALUE_NONE, 'Menginstall paket untuk require-dev')
             ->addOption('global', null, InputOption::VALUE_NONE, 'Menginstall paket dengan composer global');
@@ -39,15 +39,26 @@ class RequireCommand extends Command
 
         $nama_paket = $this->checkIfNamaPaketFolderIsLocalFolder($nama_paket_folder);
         $remote_uri = "";
+        $scheme_type = "";
+        $uri_full_path = "";
         if($nama_paket) {
             $type = "path";
             $folder = $nama_paket_folder;
+        } elseif(preg_match("/^(http)/",$nama_paket_folder)) {
+            $http_git = parse_url($nama_paket_folder);
+            $type = "vcs";
+            $remote_uri = $http_git['host'];
+            $nama_paket = preg_replace("/^\//","",$http_git['path']);
+            $scheme_type = "http";
+            $uri_full_path = $nama_paket_folder . preg_match("/(.git)$/",$nama_paket_folder)?"":".git";
         } else {
             $type = "vcs";
+            $scheme_type = "ssh";
             $remote_paket = explode(":",$nama_paket_folder);
             if(is_array($remote_paket) && count($remote_paket) == 2) {
                 $nama_paket = $remote_paket[1];
                 $remote_uri = $remote_paket[0];
+                $uri_full_path = "git@{$remote_uri}:{$nama_paket}.git";
             } else {
                 $output->writeln('<error>Nama Remote Repo harus dalam format:</error> <info>git.server-repo.com:nama/paket</info>');
                 return 0;
@@ -59,31 +70,33 @@ class RequireCommand extends Command
         if($type == "path") {
             $command_config = "$composer config repositories.{$paket_flat} path $folder";
         } elseif ($type == "vcs") {
-            $command_config = "$composer config repositories.{$paket_flat} vcs git@{$remote_uri}:{$nama_paket}.git";
+            $command_config = "$composer config repositories.{$paket_flat} vcs {$uri_full_path}";
         }
 
         if($remote_uri) {
-            $command = "git ls-remote git@{$remote_uri}:{$nama_paket}.git";
+            $command = "git ls-remote {$uri_full_path}";
             $hasil = run_proc($command);
 
             if(array_key_exists("output",$hasil) && preg_match("/(HEAD)/",$hasil['output'][0])) {
                 // do nothin to allow run composer require
             } else {
-                $user_home = $_SERVER['HOME'];
-                $id_rsa_path = $user_home."/.ssh/id_rsa.pub";
-                if(!file_exists($id_rsa_path)) {
-                    run_proc("ssh-keygen -t rsa -b 4096 -f {$user_home}/.ssh/id_rsa -q -N ''");
-                }
-                if($remote_uri){
-                    run_proc("ssh-keyscan -H $remote_uri >> {$user_home}/.ssh/known_hosts");
-                }
+                if($scheme_type == "ssh") {
+                    $user_home = $_SERVER['HOME'];
+                    $id_rsa_path = $user_home."/.ssh/id_rsa.pub";
+                    if(!file_exists($id_rsa_path)) {
+                        run_proc("ssh-keygen -t rsa -b 4096 -f {$user_home}/.ssh/id_rsa -q -N ''");
+                    }
+                    if($remote_uri){
+                        run_proc("ssh-keyscan -H $remote_uri >> {$user_home}/.ssh/known_hosts");
+                    }
 
-                $output->writeln("<error>Tidak dapat mengakses server $remote_uri, pastikan alamat server benar.</error>");
-                $output->writeln("<error>Pastikan anda telah menyimpan ssh-key berikut di server $remote_uri:</error>");
-                $output->writeln("<fg=black;bg=green>".trim(file_get_contents("{$user_home}/.ssh/id_rsa.pub"))."</>");
-                $output->writeln("");
-                $output->writeln("<info>Setelah menyimpan ssh-key silahkan ulangi perintah anda tadi.</info>");
-                return 0;
+                    $output->writeln("<error>Tidak dapat mengakses server $remote_uri, pastikan alamat server benar.</error>");
+                    $output->writeln("<error>Pastikan anda telah menyimpan ssh-key berikut di server $remote_uri:</error>");
+                    $output->writeln("<fg=black;bg=green>".trim(file_get_contents("{$user_home}/.ssh/id_rsa.pub"))."</>");
+                    $output->writeln("");
+                    $output->writeln("<info>Setelah menyimpan ssh-key silahkan ulangi perintah anda tadi.</info>");
+                    return 0;
+                }
             }
         }
 
