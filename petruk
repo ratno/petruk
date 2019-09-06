@@ -6,6 +6,6 @@ if (file_exists(__DIR__.'/../../autoload.php')) {
     require __DIR__.'/vendor/autoload.php';
 }
 
-$app = new \Symfony\Component\Console\Application('Petruk', '1.0.10');
+$app = new \Symfony\Component\Console\Application('Petruk', '1.0.12');
 $app->add(new \Ratno\Petruk\Console\RequireCommand);
 $app->run();

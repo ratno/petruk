@@ -50,7 +50,7 @@ class RequireCommand extends Command
             $remote_uri = $http_git['host'];
             $nama_paket = preg_replace("/^\//","",$http_git['path']);
             $scheme_type = "http";
-            $uri_full_path = $nama_paket_folder . preg_match("/(.git)$/",$nama_paket_folder)?"":".git";
+            $uri_full_path = $nama_paket_folder . (preg_match("/(.git)$/",$nama_paket_folder)?"":".git");
         } else {
             $type = "vcs";
             $scheme_type = "ssh";
@@ -72,6 +72,8 @@ class RequireCommand extends Command
         } elseif ($type == "vcs") {
             $command_config = "$composer config repositories.{$paket_flat} vcs {$uri_full_path}";
         }
+
+//        $output->writeln("<info>$command_config</info>");
 
         if($remote_uri) {
             $command = "git ls-remote {$uri_full_path}";
@@ -105,6 +107,8 @@ class RequireCommand extends Command
         if($dev) {
             $command_require .= " --dev";
         }
+
+//        $output->writeln("<info>$command_require</info>");
 
         $commands = [
             $command_config,
