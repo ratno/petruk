@@ -19,7 +19,8 @@ class RequireCommand extends Command
             ->addArgument('nama_paket_folder', InputArgument::REQUIRED, 'Nama paket (git.server-repo.com:nama/paket atau https://git.server-repo.com/nama/paket) atau nama folder')
             ->addArgument('versi', InputArgument::OPTIONAL, 'Versi paket (jika tidak diisi maka akan diambilkan ke dev-master)')
             ->addOption('dev', null, InputOption::VALUE_NONE, 'Menginstall paket untuk require-dev')
-            ->addOption('global', null, InputOption::VALUE_NONE, 'Menginstall paket dengan composer global');
+            ->addOption('global', null, InputOption::VALUE_NONE, 'Menginstall paket dengan composer global')
+            ->addOption('paket', "p", InputOption::VALUE_REQUIRED, 'Override setting nama paket');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -28,6 +29,7 @@ class RequireCommand extends Command
         $versi = $input->getArgument("versi") ?: "dev-master";
         $dev = $input->getOption("dev");
         $global = $input->getOption("global");
+        $custom_paket = $input->getOption("paket");
 
         if($global) {
             $composer = "composer global";
@@ -63,6 +65,10 @@ class RequireCommand extends Command
                 $output->writeln('<error>Nama Remote Repo harus dalam format:</error> <info>git.server-repo.com:nama/paket</info>');
                 return 0;
             }
+        }
+
+        if($custom_paket) {
+            $nama_paket = $custom_paket;
         }
 
         $paket_flat = str_replace("/","_",$nama_paket);
