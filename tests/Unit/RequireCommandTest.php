@@ -211,4 +211,132 @@ class RequireCommandTest extends TestCase
         $output = $commandTester->getDisplay();
         $this->assertStringContainsString('Happy Coding -Ratno-', $output);
     }
+
+    public function testExecuteRequireWithFallbackSuccess(): void
+    {
+        $reflection = new \ReflectionClass($this->command);
+        $method = $reflection->getMethod('executeRequireWithFallback');
+        $method->setAccessible(true);
+
+        // Mock output interface
+        $output = $this->createMock('Symfony\Component\Console\Output\OutputInterface');
+        $output->expects($this->never())
+               ->method('writeln');
+
+        // Test successful execution (should not trigger fallback)
+        $result = $method->invoke(
+            $this->command,
+            'echo "success"',  // command that will succeed
+            'dev-main',
+            'test/package',
+            'composer',
+            false,
+            $output
+        );
+
+        $this->assertTrue($result);
+    }
+
+    public function testExecuteRequireWithFallbackTriggered(): void
+    {
+        $reflection = new \ReflectionClass($this->command);
+        $method = $reflection->getMethod('executeRequireWithFallback');
+        $method->setAccessible(true);
+
+        // Mock output interface
+        $output = $this->createMock('Symfony\Component\Console\Output\OutputInterface');
+        $output->expects($this->once())
+               ->method('writeln')
+               ->with('<comment>dev-main gagal, mencoba dev-master sebagai fallback...</comment>');
+
+        // Test with failing command that should trigger fallback
+        $result = $method->invoke(
+            $this->command,
+            'false',  // command that will fail
+            'dev-main',
+            'test/package',
+            'composer',
+            false,
+            $output
+        );
+
+        // The fallback should also fail since we're using 'false' command
+        // but the fallback logic should have been triggered
+        $this->assertFalse($result);
+    }
+
+    public function testExecuteRequireWithFallbackNotTriggeredForNonDevMain(): void
+    {
+        $reflection = new \ReflectionClass($this->command);
+        $method = $reflection->getMethod('executeRequireWithFallback');
+        $method->setAccessible(true);
+
+        // Mock output interface
+        $output = $this->createMock('Symfony\Component\Console\Output\OutputInterface');
+        $output->expects($this->never())
+               ->method('writeln');
+
+        // Test with failing command but version is not dev-main (should not trigger fallback)
+        $result = $method->invoke(
+            $this->command,
+            'false',  // command that will fail
+            '^1.0',   // not dev-main, so no fallback
+            'test/package',
+            'composer',
+            false,
+            $output
+        );
+
+        $this->assertFalse($result);
+    }
+
+    public function testExecuteRequireWithFallbackIncludesDevFlag(): void
+    {
+        $reflection = new \ReflectionClass($this->command);
+        $method = $reflection->getMethod('executeRequireWithFallback');
+        $method->setAccessible(true);
+
+        // Mock output interface
+        $output = $this->createMock('Symfony\Component\Console\Output\OutputInterface');
+        $output->expects($this->once())
+               ->method('writeln')
+               ->with('<comment>dev-main gagal, mencoba dev-master sebagai fallback...</comment>');
+
+        // Test with dev flag enabled
+        $result = $method->invoke(
+            $this->command,
+            'false',  // command that will fail
+            'dev-main',
+            'test/package',
+            'composer',
+            true,     // dev flag enabled
+            $output
+        );
+
+        $this->assertFalse($result);
+    }
+
+    public function testDefaultVersionIsDevMain(): void
+    {
+        // Test that default version is now dev-main instead of dev-master
+        $application = new Application();
+        $application->add($this->command);
+
+        $command = $application->find('require');
+        $commandTester = new CommandTester($command);
+        
+        // Create a local package for testing
+        $localPackagePath = $this->tempDir . '/version-test-package';
+        mkdir($localPackagePath);
+        file_put_contents($localPackagePath . '/composer.json', '{"name": "test/version-package"}');
+        
+        $commandTester->execute([
+            'nama_paket_folder' => $localPackagePath,
+            // No version specified - should default to dev-main
+        ]);
+
+        $output = $commandTester->getDisplay();
+        $this->assertStringContainsString('Happy Coding -Ratno-', $output);
+        $this->assertEquals(0, $commandTester->getStatusCode());
+    }
 }

@@ -26,7 +26,7 @@ class RequireCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $nama_paket_folder = $input->getArgument('nama_paket_folder');
-        $versi = $input->getArgument("versi") ?: "dev-master";
+        $versi = $input->getArgument("versi") ?: "dev-main";
         $dev = $input->getOption("dev");
         $global = $input->getOption("global");
         $custom_paket = $input->getOption("paket");
@@ -116,18 +116,19 @@ class RequireCommand extends Command
 
 //        $output->writeln("<info>$command_require</info>");
 
-        $commands = [
-            $command_config,
-            $command_require
-        ];
-
-        $process = new Process($commands, getcwd(), null, null, null);
-        if ('\\' !== DIRECTORY_SEPARATOR && file_exists('/dev/tty') && is_readable('/dev/tty')) {
-            $process->setTty(true);
-        }
-        $process->run(function ($type, $line) use ($output) {
+        // Execute config command first
+        $configProcess = Process::fromShellCommandline($command_config, getcwd());
+        $configProcess->run(function ($type, $line) use ($output) {
             $output->write($line);
         });
+        
+        if (!$configProcess->isSuccessful()) {
+            $output->writeln('<error>Gagal mengkonfigurasi repository</error>');
+            return 1;
+        }
+        
+        // Then execute require command with fallback logic
+        $success = $this->executeRequireWithFallback($command_require, $versi, $nama_paket, $composer, $dev, $output);
         $output->writeln('<comment>Happy Coding -Ratno-</comment>');
         
         return 0;
@@ -156,5 +157,38 @@ class RequireCommand extends Command
         }
 
         return false;
+    }
+    
+    protected function executeRequireWithFallback($command_require, $versi, $nama_paket, $composer, $dev, $output)
+    {
+        $requireProcess = Process::fromShellCommandline($command_require, getcwd());
+        if ('\\' !== DIRECTORY_SEPARATOR && file_exists('/dev/tty') && is_readable('/dev/tty')) {
+            $requireProcess->setTty(true);
+        }
+        $requireProcess->run(function ($type, $line) use ($output) {
+            $output->write($line);
+        });
+        
+        // If the initial command failed and we're using dev-main, try dev-master as fallback
+        if (!$requireProcess->isSuccessful() && $versi === 'dev-main') {
+            $output->writeln('<comment>dev-main gagal, mencoba dev-master sebagai fallback...</comment>');
+            
+            $fallback_command = "$composer require {$nama_paket}:dev-master";
+            if ($dev) {
+                $fallback_command .= " --dev";
+            }
+            
+            $fallbackProcess = Process::fromShellCommandline($fallback_command, getcwd());
+            if ('\\' !== DIRECTORY_SEPARATOR && file_exists('/dev/tty') && is_readable('/dev/tty')) {
+                $fallbackProcess->setTty(true);
+            }
+            $fallbackProcess->run(function ($type, $line) use ($output) {
+                $output->write($line);
+            });
+            
+            return $fallbackProcess->isSuccessful();
+        }
+        
+        return $requireProcess->isSuccessful();
     }
 }
