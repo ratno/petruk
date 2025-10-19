@@ -19,5 +19,19 @@
         "symfony/console": "*",
         "symfony/filesystem": "*",
         "symfony/process": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Ratno\\Petruk\\Test\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test-unit": "phpunit tests/Unit",
+        "test-integration": "phpunit tests/Integration",
+        "test-coverage": "phpunit --coverage-html coverage"
     }
 }

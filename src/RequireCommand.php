@@ -23,7 +23,7 @@ class RequireCommand extends Command
             ->addOption('paket', "p", InputOption::VALUE_REQUIRED, 'Override setting nama paket');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $nama_paket_folder = $input->getArgument('nama_paket_folder');
         $versi = $input->getArgument("versi") ?: "dev-master";
@@ -121,7 +121,7 @@ class RequireCommand extends Command
             $command_require
         ];
 
-        $process = new Process(implode(' && ', $commands), getcwd(), null, null, null);
+        $process = new Process($commands, getcwd(), null, null, null);
         if ('\\' !== DIRECTORY_SEPARATOR && file_exists('/dev/tty') && is_readable('/dev/tty')) {
             $process->setTty(true);
         }
@@ -129,6 +129,8 @@ class RequireCommand extends Command
             $output->write($line);
         });
         $output->writeln('<comment>Happy Coding -Ratno-</comment>');
+        
+        return 0;
     }
 
     protected function createComposerJsonFileIfNotExists()
