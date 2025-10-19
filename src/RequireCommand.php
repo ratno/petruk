@@ -162,7 +162,7 @@ class RequireCommand extends Command
     protected function executeRequireWithFallback($command_require, $versi, $nama_paket, $composer, $dev, $output)
     {
         $requireProcess = Process::fromShellCommandline($command_require, getcwd());
-        if ('\\' !== DIRECTORY_SEPARATOR && file_exists('/dev/tty') && is_readable('/dev/tty')) {
+        if ($this->isTtyAvailable()) {
             $requireProcess->setTty(true);
         }
         $requireProcess->run(function ($type, $line) use ($output) {
@@ -179,7 +179,7 @@ class RequireCommand extends Command
             }
             
             $fallbackProcess = Process::fromShellCommandline($fallback_command, getcwd());
-            if ('\\' !== DIRECTORY_SEPARATOR && file_exists('/dev/tty') && is_readable('/dev/tty')) {
+            if ($this->isTtyAvailable()) {
                 $fallbackProcess->setTty(true);
             }
             $fallbackProcess->run(function ($type, $line) use ($output) {
@@ -190,5 +190,35 @@ class RequireCommand extends Command
         }
         
         return $requireProcess->isSuccessful();
+    }
+    
+    /**
+     * Check if TTY is available and usable
+     */
+    protected function isTtyAvailable(): bool
+    {
+        // Skip TTY on Windows
+        if ('\\' === DIRECTORY_SEPARATOR) {
+            return false;
+        }
+        
+        // Check if we're in a proper terminal session
+        if (!function_exists('posix_isatty') || !posix_isatty(STDOUT)) {
+            return false;
+        }
+        
+        // Check if /dev/tty exists and is readable/writable
+        if (!file_exists('/dev/tty')) {
+            return false;
+        }
+        
+        // Use a more robust check for TTY accessibility
+        $handle = @fopen('/dev/tty', 'r+');
+        if ($handle === false) {
+            return false;
+        }
+        
+        fclose($handle);
+        return true;
     }
 }
